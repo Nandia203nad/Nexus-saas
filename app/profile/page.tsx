@@ -140,9 +140,36 @@ export default function ProfilePage() {
         </div>
         ${tableHtml('Authored Blogs', report.authored)}
         ${tableHtml('Read / Saved Blogs', report.interacted)}
+        ${tableHtml('Comments on Your Blogs', (report.authored as Array<Record<string,unknown>>).flatMap(b =>
+          ((b.comments as Array<{author:string;content:string;createdAt:string}>) || []).map(c => ({
+            blog: b.title, commenter: c.author, comment: c.content, date: c.createdAt
+          }))
+        ))}
         ${tableHtml('Processed Analysis Files', report.processed)}
       </body>
     </html>`;
+
+  const saveReportToPortfolio = async (report: BlogAnalysisReport) => {
+    const token = localStorage.getItem('nexus_token');
+    if (!token) return;
+    const name = `Blog_Report_${new Date().toISOString().slice(0,10)}.json`;
+    const content = JSON.stringify({
+      generatedAt: report.generatedAt,
+      user: report.user,
+      totals: report.totals,
+      authored: report.authored,
+      interacted: report.interacted,
+    }, null, 2);
+    const res = await fetch('/api/portfolio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name, type: 'report', content }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setPortfolio(p => [data.file, ...p]);
+    }
+  };
 
   const exportBlogReportExcel = async () => {
     setExportingReport('excel');
@@ -152,6 +179,7 @@ export default function ProfilePage() {
       const blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');a.href=url;a.download=`${reportFileName()}.xls`;a.click();URL.revokeObjectURL(url);
+      await saveReportToPortfolio(report);
     } catch (e) { alert(e instanceof Error ? e.message : 'Report export failed'); }
     finally { setExportingReport(null); }
   };
@@ -166,6 +194,7 @@ export default function ProfilePage() {
       win.document.close();
       win.focus();
       window.setTimeout(()=>win.print(), 300);
+      await saveReportToPortfolio(report);
     } catch (e) { alert(e instanceof Error ? e.message : 'Report export failed'); }
     finally { setExportingReport(null); }
   };
@@ -429,7 +458,33 @@ export default function ProfilePage() {
               <div className="corner c-tl" />
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
                 <div className="editorial-label">Portfolio Files ({portfolio.length})</div>
-                <button onClick={()=>setShowAddFile(!showAddFile)} className={`btn btn-sm ${showAddFile?'btn-ghost':'btn-secondary'}`}>{showAddFile?'✕ Cancel':'+ Add File'}</button>
+                <div style={{display:'flex',gap:8}}>
+                  <button
+                    className="btn btn-sm"
+                    style={{ borderColor:'rgba(231,196,119,.4)', color:'#e7c477' }}
+                    onClick={async () => {
+                      const token = localStorage.getItem('nexus_token');
+                      const sampleContent = JSON.stringify({
+                        generatedAt: new Date().toISOString(),
+                        note: 'Энэ бол жишээ portfolio файл юм.',
+                        totals: { published: 3, drafts: 1, totalViews: 142, totalLikes: 28, totalComments: 9, averageSeoScore: 74 },
+                        authored: [
+                          { title: 'AI болон маркетингийн шинэ стратеги', views: 89, likes: 18, comments: 5, seoScore: 82 },
+                          { title: 'Next.js 14 App Router гарын авлага', views: 53, likes: 10, comments: 4, seoScore: 68 },
+                        ],
+                      }, null, 2);
+                      const res = await fetch('/api/portfolio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ name: 'Sample_Blog_Report.json', type: 'report', content: sampleContent }),
+                      });
+                      if (res.ok) { const d = await res.json(); setPortfolio(p => [d.file, ...p]); alert('Жишээ файл нэмэгдлээ!'); }
+                    }}
+                  >
+                    📄 Жишээ файл үүсгэх
+                  </button>
+                  <button onClick={()=>setShowAddFile(!showAddFile)} className={`btn btn-sm ${showAddFile?'btn-ghost':'btn-secondary'}`}>{showAddFile?'✕ Cancel':'+ Add File'}</button>
+                </div>
               </div>
 
               {showAddFile&&(

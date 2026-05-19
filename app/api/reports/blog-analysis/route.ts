@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   try {
     const authUser = getAuthUser(req);
 
-    const [user, authoredBlogs, likedBlogs, bookmarkedBlogs, portfolioFiles] = await Promise.all([
+    const [user, authoredBlogs, likedBlogs, bookmarkedBlogs, portfolioFiles, allComments] = await Promise.all([
       prisma.user.findUnique({
         where: { id: authUser.userId },
         select: { id: true, name: true, email: true, plan: true, xp: true, level: true },
@@ -78,7 +78,20 @@ export async function GET(req: NextRequest) {
         where: { userId: authUser.userId, type: { in: ['analysis', 'report', 'strategy', 'research'] } },
         orderBy: { createdAt: 'desc' },
       }),
+      prisma.comment.findMany({
+        where: { blog: { authorId: authUser.userId } },
+        include: { author: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }),
     ]);
+
+    const commentsByBlog = new Map<string, Array<{ author: string; content: string; createdAt: Date }>>();
+    allComments.forEach(c => {
+      const list = commentsByBlog.get(c.blogId) ?? [];
+      list.push({ author: c.author.name, content: c.content, createdAt: c.createdAt });
+      commentsByBlog.set(c.blogId, list);
+    });
 
     const authored = authoredBlogs.map((blog) => ({
       id: blog.id,
@@ -88,12 +101,13 @@ export async function GET(req: NextRequest) {
       tags: blog.tags.map((item) => item.tag.name).join(', '),
       views: blog.views,
       likes: blog._count.likes,
-      comments: blog._count.comments,
+      commentCount: blog._count.comments,
       bookmarks: blog._count.bookmarks,
       readTime: blog.readTime,
       createdAt: blog.createdAt,
       updatedAt: blog.updatedAt,
       ...analyzeText(blog.content),
+      comments: commentsByBlog.get(blog.id) ?? [],
     }));
 
     const interactedMap = new Map<string, {
@@ -173,7 +187,8 @@ export async function GET(req: NextRequest) {
       processed: processed.length,
       totalViews: authored.reduce((sum, blog) => sum + blog.views, 0),
       totalLikes: authored.reduce((sum, blog) => sum + blog.likes, 0),
-      totalComments: authored.reduce((sum, blog) => sum + blog.comments, 0),
+      totalComments: authored.reduce((sum, blog) => sum + blog.commentCount, 0),
+      totalCommentContent: allComments.length,
       averageSeoScore: authored.length
         ? Math.round(authored.reduce((sum, blog) => sum + blog.seoScore, 0) / authored.length)
         : 0,

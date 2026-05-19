@@ -11,6 +11,7 @@ function LoginContent() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -23,6 +24,11 @@ function LoginContent() {
     const googleError = searchParams.get('error');
     if (googleError) setError(googleError);
   }, [searchParams]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('nexus_remember_email');
+    if (saved) { setForm(f => ({ ...f, email: saved })); setRememberEmail(true); }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,6 +50,8 @@ function LoginContent() {
 
       if (res.ok && data.token) {
         localStorage.setItem('nexus_token', data.token);
+        if (rememberEmail) localStorage.setItem('nexus_remember_email', form.email);
+        else localStorage.removeItem('nexus_remember_email');
         localStorage.setItem('nexus_user', JSON.stringify(data.user));
         router.replace(redirect);
         return;
@@ -128,6 +136,15 @@ function LoginContent() {
             {error && (
               <div style={{ color: '#ffb4b4', background: 'rgba(255,100,100,.12)', border: '1px solid rgba(255,100,100,.22)', borderRadius: 10, padding: '10px 12px', fontSize: '.82rem' }}>{error}</div>
             )}
+
+            <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+              <input type="checkbox" id="remember-email" checked={rememberEmail}
+                onChange={e => setRememberEmail(e.target.checked)}
+                style={{ width:15, height:15, accentColor:'#0ba4a0', cursor:'pointer' }} />
+              <label htmlFor="remember-email" style={{ color:'rgba(255,255,255,.55)', fontSize:'.8rem', cursor:'pointer' }}>
+                Имэйл хадгалах
+              </label>
+            </div>
 
             <button type="submit" disabled={loading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, width: '100%', padding: 14, borderRadius: 12, border: '1px solid rgba(11,164,160,.42)', background: 'linear-gradient(135deg,#0ba4a0,#08c0c0)', color: '#fff', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? .65 : 1 }}>
               {loading && <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.34)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite' }} />}
