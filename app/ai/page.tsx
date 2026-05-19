@@ -64,6 +64,11 @@ export default function AIPage() {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ action, payload }),
     });
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      addLog(`ERR: Серверийн алдаа (${res.status})`);
+      throw new Error(`Серверийн алдаа гарлаа (${res.status}). Дахин оролдоно уу.`);
+    }
     const data = await res.json();
     if (!res.ok) { addLog(`ERR: ${data.message}`); throw new Error(data.message); }
     addLog(`OK: ${String(data.action)}`);
@@ -162,7 +167,6 @@ export default function AIPage() {
   }
 
   const res = result?.result as Record<string, unknown> | undefined;
-  const currentTab = TABS.find(t => t.k === active)!;
 
   return (
     <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>

@@ -217,7 +217,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('[AI API Error]:', error);
-    // Surface descriptive Anthropic API errors instead of generic message
     if (error instanceof Anthropic.APIError) {
       const msg =
         error.status === 401 ? 'AI API түлхүүр буруу эсвэл хүчингүй байна. .env дахь ANTHROPIC_API_KEY-г шалгана уу.' :
@@ -229,7 +228,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: msg }, { status: error.status ?? 500 });
     }
     if (error instanceof Error && error.message.includes('ANTHROPIC_API_KEY')) {
-      return NextResponse.json({ message: 'ANTHROPIC_API_KEY тохируулагдаагүй байна.' }, { status: 500 });
+      return NextResponse.json({ message: 'ANTHROPIC_API_KEY тохируулагдаагүй байна. .env.local файлд нэм.' }, { status: 500 });
+    }
+    // SDK received a non-JSON (HTML) response — usually a network proxy or invalid API key
+    if (error instanceof SyntaxError || (error instanceof Error && error.message.startsWith('Unexpected token'))) {
+      return NextResponse.json({ message: 'AI сервертэй холбогдоход алдаа гарлаа. ANTHROPIC_API_KEY зөв эсэхийг шалгана уу.' }, { status: 502 });
+    }
+    // Generic network / fetch failure
+    if (error instanceof TypeError && error.message.toLowerCase().includes('fetch')) {
+      return NextResponse.json({ message: 'AI сервертэй холбогдож чадахгүй байна. Интернет холболтоо шалгана уу.' }, { status: 503 });
     }
     const e = handleError(error);
     return NextResponse.json({ message: e.message }, { status: e.status });
