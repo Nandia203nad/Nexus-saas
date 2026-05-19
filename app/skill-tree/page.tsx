@@ -122,6 +122,7 @@ export default function SkillTreePage() {
   const [tldrResult, setTldrResult] = useState<string | null>(null);
   const [error, setError] = useState('');
   const topicCache = useRef<Record<string, TopicState>>({});
+  const quizSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('nexus_token');
@@ -312,6 +313,7 @@ export default function SkillTreePage() {
         @keyframes nodeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
         @keyframes branchGlow { 0%,100%{opacity:.5} 50%{opacity:1} }
         @keyframes modalSlide { from{opacity:0;transform:translateY(18px) scale(.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes quizGlow { 0%,100%{box-shadow:0 0 0 0 rgba(120,245,223,0),transform:scale(1)} 50%{box-shadow:0 0 22px 4px rgba(120,245,223,0.35);transform:scale(1.02)} }
         .tree-node { transition: filter .2s; }
         .tree-node:hover { filter: brightness(1.35) drop-shadow(0 0 8px currentColor); }
         .skill-shell {
@@ -741,7 +743,7 @@ export default function SkillTreePage() {
                       ))}
                     </div>
 
-                    <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.07)' }}>
+                    <div style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.07)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <button
                         type="button"
                         onClick={() => topicAction('read')}
@@ -755,8 +757,25 @@ export default function SkillTreePage() {
                           fontWeight: 700, fontSize: '.86rem',
                         }}
                       >
-                        {topicState.progress?.read ? 'Read complete - XP earned' : `Mark as read +${activeTopic.readXp} XP`}
+                        {topicState.progress?.read ? '✓ Уншсан — XP нэмэгдлээ' : `Уншсан гэж тэмдэглэх +${activeTopic.readXp} XP`}
                       </button>
+
+                      {topicState.progress?.read && !topicState.progress?.quizPassed && (
+                        <button
+                          type="button"
+                          onClick={() => quizSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                            padding: '13px 20px', borderRadius: 10, fontWeight: 800, fontSize: '.9rem',
+                            border: '1.5px solid rgba(120,245,223,.55)',
+                            background: 'linear-gradient(135deg,rgba(120,245,223,.18),rgba(120,245,223,.07))',
+                            color: '#78f5df', cursor: 'pointer',
+                            animation: 'quizGlow 2s ease-in-out infinite',
+                          }}
+                        >
+                          ⚡ Дараагийн алхам: Quiz → +{activeTopic.quizXp} XP
+                        </button>
+                      )}
                     </div>
 
                     <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -848,7 +867,7 @@ export default function SkillTreePage() {
                 )}
               </div>
 
-              <div className="modal-right">
+              <div className="modal-right" ref={quizSectionRef}>
                 <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '.6rem', color: activeTopic.color, marginBottom: 12, letterSpacing: '.1em' }}>KNOWLEDGE QUIZ</div>
 
                 {topicState.progress?.quizPassed ? (
@@ -858,14 +877,22 @@ export default function SkillTreePage() {
                   </div>
                 ) : quizSubmitted ? (
                   <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(231,196,119,.08)', border: '1px solid rgba(231,196,119,.25)', marginBottom: 14 }}>
-                    <div style={{ color: '#e7c477', fontWeight: 900, fontSize: '.95rem' }}>Score: {topicState.attempts[0]?.score ?? 0}%</div>
-                    <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem', marginTop: 4 }}>Need 70% to pass. Try again.</div>
+                    <div style={{ color: '#e7c477', fontWeight: 900, fontSize: '.95rem' }}>Оноо: {topicState.attempts[0]?.score ?? 0}%</div>
+                    <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem', marginTop: 4 }}>Тэнцэхийн тулд 70%+ хэрэгтэй.</div>
+                    <button
+                      type="button"
+                      onClick={() => { setQuizSubmitted(false); setAnswers([]); }}
+                      style={{ marginTop: 10, padding: '7px 16px', borderRadius: 8, border: '1px solid rgba(231,196,119,.45)', background: 'rgba(231,196,119,.12)', color: '#e7c477', fontWeight: 700, fontSize: '.78rem', cursor: 'pointer' }}
+                    >
+                      🔄 Дахин оролдох
+                    </button>
                   </div>
                 ) : null}
 
                 <div style={{ display: 'grid', gap: 16 }}>
                   {activeTopic.quiz.map((question, qIndex) => {
                     const answered = answers[qIndex] !== undefined;
+                    const passed = Boolean(topicState.progress?.quizPassed);
                     const isCorrect = quizSubmitted && answers[qIndex] === question.answer;
                     const isWrong = quizSubmitted && answered && answers[qIndex] !== question.answer;
                     return (
@@ -879,21 +906,22 @@ export default function SkillTreePage() {
                             const selectedOption = answers[qIndex] === optionIndex;
                             const revealCorrect = quizSubmitted && optionIndex === question.answer;
                             const revealWrong = quizSubmitted && selectedOption && optionIndex !== question.answer;
+                            const locked = passed;
                             return (
                               <label
                                 key={option}
-                                style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 12px', borderRadius: 9, border: `1px solid ${revealCorrect ? 'rgba(120,245,223,.4)' : revealWrong ? 'rgba(252,129,129,.35)' : selectedOption ? `${activeTopic.color}55` : 'rgba(255,255,255,.08)'}`, background: revealCorrect ? 'rgba(120,245,223,.08)' : revealWrong ? 'rgba(252,129,129,.07)' : selectedOption ? `${activeTopic.color}14` : 'rgba(255,255,255,.02)', cursor: quizSubmitted ? 'default' : 'pointer', transition: 'all .15s' }}
+                                style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '8px 12px', borderRadius: 9, border: `1px solid ${revealCorrect ? 'rgba(120,245,223,.4)' : revealWrong ? 'rgba(252,129,129,.35)' : selectedOption ? `${activeTopic.color}55` : 'rgba(255,255,255,.08)'}`, background: revealCorrect ? 'rgba(120,245,223,.08)' : revealWrong ? 'rgba(252,129,129,.07)' : selectedOption ? `${activeTopic.color}14` : 'rgba(255,255,255,.02)', cursor: locked ? 'default' : 'pointer', transition: 'all .15s' }}
                               >
                                 <input
                                   type="radio"
                                   name={`modal-quiz-${qIndex}`}
                                   checked={selectedOption}
-                                  disabled={quizSubmitted}
-                                  onChange={() => !quizSubmitted && setAnswers(current => { const next = [...current]; next[qIndex] = optionIndex; return next; })}
+                                  disabled={locked}
+                                  onChange={() => !locked && setAnswers(current => { const next = [...current]; next[qIndex] = optionIndex; return next; })}
                                   style={{ marginTop: 2, accentColor: activeTopic.color, flexShrink: 0 }}
                                 />
                                 <span style={{ color: revealCorrect ? '#78f5df' : revealWrong ? '#fc8181' : 'rgba(255,255,255,.78)', fontSize: '.83rem', lineHeight: 1.4 }}>
-                                  {option}{revealCorrect ? ' OK' : ''}{revealWrong ? ' X' : ''}
+                                  {option}{revealCorrect ? ' ✓' : ''}{revealWrong ? ' ✗' : ''}
                                 </span>
                               </label>
                             );

@@ -5,13 +5,8 @@ const HF_BASE  = 'https://api-inference.huggingface.co';
 
 export type HFMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
-type HFChatChoice = {
-  message?: { role: string; content: string };
-  text?: string;
-};
-
 type HFChatResponse = {
-  choices?: HFChatChoice[];
+  choices?: Array<{ message?: { role: string; content: string } }>;
   error?: string;
   estimated_time?: number;
 };
@@ -20,94 +15,134 @@ type HFTextResponse = Array<{ generated_text?: string }> | { error?: string; est
 
 function getToken() {
   const t = process.env.HF_TOKEN;
-  if (!t) throw new Error('HF_TOKEN is not configured');
+  if (!t) throw new Error('HF_TOKEN тохируулагдаагүй байна');
   return t;
 }
 
-// Chat completions API (OpenAI-compatible) — preferred for instruct models
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+function stripThink(text: string) {
+  return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+}
+
+// Chat completions API with auto-retry on model loading (503)
 export async function hfChat(
   messages: HFMessage[],
   opts: { max_tokens?: number; temperature?: number } = {}
 ): Promise<string> {
   const token = getToken();
-  const res = await fetch(`${HF_BASE}/models/${HF_MODEL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: HF_MODEL,
-      messages,
-      max_tokens:  opts.max_tokens  ?? 1024,
-      temperature: opts.temperature ?? 0.6,
-      stream: false,
-    }),
-  });
 
-  if (res.status === 503) {
-    // Model is loading — fall back to text generation endpoint
-    return hfTextGeneration(messages, opts);
-  }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`${HF_BASE}/models/${HF_MODEL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: HF_MODEL,
+        messages,
+        max_tokens:  opts.max_tokens  ?? 1024,
+        temperature: opts.temperature ?? 0.7,
+        stream: false,
+      }),
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => `HTTP ${res.status}`);
-    throw new Error(`HuggingFace error ${res.status}: ${text.slice(0, 300)}`);
-  }
-
-  const data = await res.json() as HFChatResponse;
-  if (data.error) {
-    if (data.estimated_time) {
-      throw new Error(`DeepSeek model is loading (~${Math.ceil(data.estimated_time)}s). Try again shortly.`);
+    // Model still loading — wait and retry
+    if (res.status === 503) {
+      if (attempt < 2) {
+        await sleep(4000 + attempt * 2000);
+        continue;
+      }
+      // After 3 tries, fall back to text-gen endpoint
+      return hfTextGeneration(messages, opts);
     }
-    // Fall back to text generation
-    return hfTextGeneration(messages, opts);
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => `HTTP ${res.status}`);
+      // If JSON error body with loading info
+      try {
+        const j = JSON.parse(body) as { error?: string; estimated_time?: number };
+        if (j.estimated_time && attempt < 2) {
+          await sleep(Math.min(j.estimated_time * 1000, 8000));
+          continue;
+        }
+        if (j.error) throw new Error(`DeepSeek: ${j.error}`);
+      } catch { /* not JSON */ }
+      throw new Error(`HuggingFace ${res.status}: ${body.slice(0, 200)}`);
+    }
+
+    const data = await res.json() as HFChatResponse;
+
+    if (data.error) {
+      if (data.estimated_time && attempt < 2) {
+        await sleep(Math.min(data.estimated_time * 1000, 8000));
+        continue;
+      }
+      // Fall back to text generation
+      return hfTextGeneration(messages, opts);
+    }
+
+    const content = data.choices?.[0]?.message?.content ?? '';
+    return stripThink(content);
   }
 
-  const content = data.choices?.[0]?.message?.content ?? '';
-  // Strip <think>...</think> reasoning blocks from output for cleaner UX
-  return content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  return hfTextGeneration(messages, opts);
 }
 
-// Text generation fallback — wraps messages into a prompt string
+// Text generation fallback — builds a prompt string from messages
 async function hfTextGeneration(
   messages: HFMessage[],
   opts: { max_tokens?: number; temperature?: number } = {}
 ): Promise<string> {
   const token = getToken();
 
-  // Build Llama-3 / DeepSeek chat template
   const prompt = messages.map(m => {
     if (m.role === 'system') return `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n${m.content}<|eot_id|>`;
     if (m.role === 'user')   return `<|start_header_id|>user<|end_header_id|>\n${m.content}<|eot_id|>`;
     return `<|start_header_id|>assistant<|end_header_id|>\n${m.content}<|eot_id|>`;
   }).join('') + '<|start_header_id|>assistant<|end_header_id|>\n';
 
-  const res = await fetch(`${HF_BASE}/models/${HF_MODEL}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      inputs: prompt,
-      parameters: {
-        max_new_tokens:  opts.max_tokens  ?? 1024,
-        temperature:     opts.temperature ?? 0.6,
-        return_full_text: false,
-        stop: ['<|eot_id|>', '<|end_of_text|>'],
-      },
-    }),
-  });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`${HF_BASE}/models/${HF_MODEL}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          max_new_tokens:  opts.max_tokens  ?? 1024,
+          temperature:     opts.temperature ?? 0.7,
+          return_full_text: false,
+          stop: ['<|eot_id|>', '<|end_of_text|>'],
+        },
+        options: { wait_for_model: true },
+      }),
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => `HTTP ${res.status}`);
-    throw new Error(`HuggingFace error ${res.status}: ${text.slice(0, 300)}`);
-  }
-
-  const data = await res.json() as HFTextResponse;
-
-  if (!Array.isArray(data)) {
-    if (data.estimated_time) {
-      throw new Error(`DeepSeek model is loading (~${Math.ceil(data.estimated_time)}s). Try again shortly.`);
+    if (res.status === 503) {
+      if (attempt < 2) { await sleep(5000 + attempt * 3000); continue; }
+      throw new Error('DeepSeek загвар ачаалагдаж байна. 30 секунд хүлээгээд дахин оролдоно уу.');
     }
-    throw new Error(data.error ?? 'HF inference failed');
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => `HTTP ${res.status}`);
+      try {
+        const j = JSON.parse(body) as { error?: string; estimated_time?: number };
+        if (j.estimated_time && attempt < 2) { await sleep(Math.min(j.estimated_time * 1000, 10000)); continue; }
+        if (j.error) throw new Error(`DeepSeek: ${j.error}`);
+      } catch { /* not JSON */ }
+      throw new Error(`HuggingFace ${res.status}: ${body.slice(0, 200)}`);
+    }
+
+    const data = await res.json() as HFTextResponse;
+
+    if (!Array.isArray(data)) {
+      if (data.estimated_time && attempt < 2) {
+        await sleep(Math.min(data.estimated_time * 1000, 10000));
+        continue;
+      }
+      throw new Error(data.error ?? 'HF inference failed');
+    }
+
+    return stripThink(data[0]?.generated_text ?? '');
   }
 
-  const text = data[0]?.generated_text ?? '';
-  return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  throw new Error('DeepSeek загвар ачаалагдаж байна. Хэсэг хугацаа хүлээгээд дахин оролдоно уу.');
 }
