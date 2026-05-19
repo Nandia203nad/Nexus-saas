@@ -1,0 +1,133 @@
+export type VideoItem = {
+  id: string;
+  title: string;
+  author: string;
+  duration: string;
+  views: string;
+  cat: string;
+  level: string;
+  xp: number;
+  yt: string;
+  desc: string;
+  tags: string[];
+};
+
+export const DEFAULT_VIDEOS: VideoItem[] = [
+  {
+    id: 'v1',
+    title: 'TikTok algorithm 2025: complete guide',
+    author: 'Batbold D',
+    duration: '42:15',
+    views: '12.4K',
+    cat: 'marketing',
+    level: 'Intermediate',
+    xp: 80,
+    yt: 'LXb3EKWsInQ',
+    desc: 'TikTok algorithm, hook, retention, and engagement basics explained step by step.',
+    tags: ['TikTok', 'Algorithm', 'Marketing'],
+  },
+  {
+    id: 'v2',
+    title: 'ChatGPT and Claude for content creation',
+    author: 'Sarnai M',
+    duration: '38:20',
+    views: '24.1K',
+    cat: 'ai',
+    level: 'Beginner',
+    xp: 90,
+    yt: 'T-D1KVIuvjA',
+    desc: 'Use AI tools to draft blog posts, captions, emails, and campaign ideas faster.',
+    tags: ['AI', 'ChatGPT', 'Content'],
+  },
+  {
+    id: 'v3',
+    title: 'On-page SEO technique: advanced guide',
+    author: 'Munhbayar Ts',
+    duration: '55:40',
+    views: '8.9K',
+    cat: 'seo',
+    level: 'Advanced',
+    xp: 120,
+    yt: 'MYE6T_gd7H0',
+    desc: 'Advanced on-page SEO, keyword placement, internal linking, and search intent analysis.',
+    tags: ['SEO', 'Google', 'Rank'],
+  },
+  {
+    id: 'v4',
+    title: 'Freelancer roadmap from zero to first client',
+    author: 'Enhtuvshin A',
+    duration: '46:00',
+    views: '18.3K',
+    cat: 'freelance',
+    level: 'Beginner',
+    xp: 70,
+    yt: 'ZZ5LpwO-An4',
+    desc: 'Build a portfolio, find clients, write proposals, and deliver your first freelance project.',
+    tags: ['Freelance', 'Client', 'Portfolio'],
+  },
+  {
+    id: 'v5',
+    title: 'Email marketing automation workflow',
+    author: 'Ganbaatar N',
+    duration: '33:10',
+    views: '6.2K',
+    cat: 'marketing',
+    level: 'Intermediate',
+    xp: 60,
+    yt: 'hHW1oY26kxQ',
+    desc: 'Create automated email sequences and practical campaign flows for audience growth.',
+    tags: ['Email', 'Automation', 'Marketing'],
+  },
+  {
+    id: 'v6',
+    title: 'Personal brand: LinkedIn strategy',
+    author: 'Boldbaatar H',
+    duration: '29:45',
+    views: '14.7K',
+    cat: 'brand',
+    level: 'Intermediate',
+    xp: 75,
+    yt: 'CDdvReNKKuk',
+    desc: 'Optimize your LinkedIn profile, create useful content, and grow professional trust.',
+    tags: ['LinkedIn', 'Brand', 'Network'],
+  },
+  {
+    id: 'v7',
+    title: 'Web3 and blockchain content marketing',
+    author: 'Boldbaatar H',
+    duration: '61:30',
+    views: '4.1K',
+    cat: 'ai',
+    level: 'Advanced',
+    xp: 150,
+    yt: 'SSo_EIwHSd4',
+    desc: 'Understand Web3 audiences, DAO communities, and blockchain-focused content strategy.',
+    tags: ['Web3', 'Blockchain', 'DAO'],
+  },
+  {
+    id: 'v8',
+    title: 'YouTube Shorts strategy: fast growth',
+    author: 'Batbold D',
+    duration: '24:50',
+    views: '31.2K',
+    cat: 'marketing',
+    level: 'Beginner',
+    xp: 55,
+    yt: 'F57P9C4SAW4',
+    desc: 'Short-form video hooks, retention, upload schedule, and repeatable format ideas.',
+    tags: ['YouTube', 'Shorts', 'Video'],
+  },
+  {
+    id: 'v9',
+    title: 'Python basics for marketing analytics',
+    author: 'Sarnai M',
+    duration: '48:20',
+    views: '7.8K',
+    cat: 'ai',
+    level: 'Advanced',
+    xp: 130,
+    yt: '_uQrJ0TkZlc',
+    desc: 'Analyze marketing data with Python and Pandas to find useful audience insights.',
+    tags: ['Python', 'Data', 'Analytics'],
+  },
+];
