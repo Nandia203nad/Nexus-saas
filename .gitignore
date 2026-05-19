@@ -1,0 +1,64 @@
+# ── Dependencies ──────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ── Environment & Secrets ─────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+
+# ── Next.js Build Output ──────────────────────────────
+.next/
+out/
+build/
+dist/
+
+# ── Database / Prisma ─────────────────────────────────
+prisma/migrations/*/migration_lock.toml
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Logs ──────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+logs/
+
+# ── OS / Editor ───────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# ── Testing ───────────────────────────────────────────
+coverage/
+.nyc_output/
+cypress/videos/
+cypress/screenshots/
+
+# ── Misc ──────────────────────────────────────────────
+.vercel
+.turbo
+*.tgz
+*.zip
+.cache/
+tmp/
+temp/
