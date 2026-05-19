@@ -1,4 +1,5 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 export const metadata: Metadata = {
   title: 'NEXUS - Everything Connects',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="cyber-bg" />
         <div className="grid-lines" />
         {children}
+        <Analytics />
       </body>
     </html>
   );
