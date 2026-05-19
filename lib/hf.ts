@@ -47,6 +47,11 @@ export async function hfChat(
     return hfTextGeneration(messages, opts);
   }
 
+  if (!res.ok) {
+    const text = await res.text().catch(() => `HTTP ${res.status}`);
+    throw new Error(`HuggingFace error ${res.status}: ${text.slice(0, 300)}`);
+  }
+
   const data = await res.json() as HFChatResponse;
   if (data.error) {
     if (data.estimated_time) {
@@ -88,6 +93,11 @@ async function hfTextGeneration(
       },
     }),
   });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => `HTTP ${res.status}`);
+    throw new Error(`HuggingFace error ${res.status}: ${text.slice(0, 300)}`);
+  }
 
   const data = await res.json() as HFTextResponse;
 

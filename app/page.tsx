@@ -88,7 +88,7 @@ export default function LandingPage() {
       `}</style>
 
       {/* ─── HERO — full-screen background image ─── */}
-      <section id="hero" style={{ position:'relative', overflow:'hidden', minHeight:'100vh' }}>
+      <section id="hero" style={{ position:'relative', overflow:'hidden', minHeight:'90vh' }}>
 
         {/* Full-screen background image */}
         <div style={{ position:'absolute', inset:0, zIndex:0 }}>
@@ -96,7 +96,7 @@ export default function LandingPage() {
             src="/hero-bg.jpg"
             alt="Nexus hero"
             fill
-            style={{ objectFit:'cover', objectPosition:'center top' }}
+            style={{ objectFit:'cover', objectPosition:'center top', filter:'brightness(1.08) contrast(1.12) saturate(1.25)' }}
             priority
           />
           {/* Left gradient overlay — text readable, right side image clear */}
@@ -125,7 +125,7 @@ export default function LandingPage() {
         </nav>
 
         {/* Hero content — left-aligned, over the image */}
-        <div style={{ position:'relative', zIndex:5, maxWidth:1280, margin:'0 auto', padding:'0 48px 80px', display:'flex', flexDirection:'column', justifyContent:'center', minHeight:'calc(100vh - 86px)' }}>
+        <div style={{ position:'relative', zIndex:5, maxWidth:1280, margin:'0 auto', padding:'0 48px 80px', display:'flex', flexDirection:'column', justifyContent:'center', minHeight:'calc(90vh - 86px)' }}>
           <div style={{ maxWidth:600 }}>
             <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:24 }}>
               {['Content','XP Engine','Skill Tree','AI Agent'].map(t => (
