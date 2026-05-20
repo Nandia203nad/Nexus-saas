@@ -28,6 +28,7 @@ export default function LoginPage() {
       </section>
 
       <section style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '32px 40px', background: 'linear-gradient(180deg, rgba(7,10,18,.82), rgba(5,8,16,.88))' }}>
+        <div id="clerk-captcha" />
         <SignIn
           appearance={{
             elements: {

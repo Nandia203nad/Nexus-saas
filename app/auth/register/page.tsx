@@ -32,6 +32,7 @@ export default function RegisterPage() {
       </div>
 
       <div style={{ flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 40px', background: 'rgba(8,5,20,0.92)' }}>
+        <div id="clerk-captcha" />
         <SignUp
           appearance={{
             elements: {
