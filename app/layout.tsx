@@ -2,6 +2,7 @@
 import './globals.css';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
+import Providers from './providers';
 
 export const metadata: Metadata = {
   title: 'NEXUS - Everything Connects',
@@ -20,7 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <div className="cyber-bg" />
         <div className="grid-lines" />
-        {children}
+        <Providers>{children}</Providers>
         <SpeedInsights />
         <Analytics />
       </body>
