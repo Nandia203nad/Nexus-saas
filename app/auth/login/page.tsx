@@ -1,6 +1,8 @@
 import { SignIn } from '@clerk/nextjs';
 import Image from 'next/image';
 
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   return (
     <main style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', fontFamily: "'Inter', system-ui, sans-serif", position: 'relative', zIndex: 1 }}>

@@ -2,6 +2,8 @@ import { SignUp } from '@clerk/nextjs';
 import Image from 'next/image';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default function RegisterPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Inter',system-ui,sans-serif", position: 'relative' }}>
