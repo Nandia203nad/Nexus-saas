@@ -58,10 +58,16 @@ export default function ProfilePage() {
   const handleUpgrade = async (p:'PREMIUM'|'MAX') => {
     setUpgrading(true);
     const token=localStorage.getItem('nexus_token');
-    const res=await fetch('/api/subscription',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({action:'upgrade',plan:p})});
-    const data=await res.json();
-    if(res.ok){alert(data.message);window.location.reload();}
-    setUpgrading(false);
+    try {
+      const res=await fetch('/api/stripe/checkout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({plan:p})});
+      const data=await res.json();
+      if(data.url){window.location.href=data.url;}
+      else{alert(data.message||'Stripe холболтод алдаа гарлаа.');}
+    } catch {
+      alert('Сүлжээний алдаа гарлаа. Дахин оролдоно уу.');
+    } finally {
+      setUpgrading(false);
+    }
   };
 
   const handleAddFile = async (e:React.FormEvent) => {
