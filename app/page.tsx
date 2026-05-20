@@ -96,6 +96,8 @@ export default function LandingPage() {
             src="/hero-bg.jpg"
             alt="Nexus hero"
             fill
+            sizes="100vw"
+            quality={95}
             style={{ objectFit:'cover', objectPosition:'center top', filter:'brightness(1.08) contrast(1.12) saturate(1.25)' }}
             priority
           />
