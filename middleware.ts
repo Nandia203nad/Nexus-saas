@@ -1,4 +1,3 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -61,59 +60,9 @@ const ATTACK_PATTERNS = [
 
 const BAD_EXTENSIONS = /\.(php|asp|aspx|cgi|pl|sh|bat|exe|dll|jsp)$/i;
 
-const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+const PROTECTED_PREFIXES = ['/home', '/dashboard', '/ai', '/profile', '/feed', '/skill-tree', '/videos'];
 
-function addSecurityHeaders(res: NextResponse) {
-  res.headers.set('X-Content-Type-Options', 'nosniff');
-  res.headers.set('X-Frame-Options', 'DENY');
-  res.headers.set('X-XSS-Protection', '1; mode=block');
-  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self "https://js.stripe.com")');
-  res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  res.headers.set('X-DNS-Prefetch-Control', 'off');
-  res.headers.set('X-Download-Options', 'noopen');
-  res.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
-  res.headers.set(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://accounts.google.com https://cdnjs.cloudflare.com https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://images.unsplash.com https://lh3.googleusercontent.com https://img.youtube.com https://*.supabase.co https://avatars.githubusercontent.com https://img.clerk.com",
-      "connect-src 'self' https://*.supabase.co https://api.stripe.com https://accounts.google.com https://*.clerk.com https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://challenges.cloudflare.com",
-      "worker-src blob: https://*.clerk.accounts.dev https://*.clerk.com",
-      "frame-src https://js.stripe.com https://hooks.stripe.com https://accounts.google.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "upgrade-insecure-requests",
-    ].join('; ')
-  );
-}
-
-// ── Protected routes (require Clerk session) ──────────────────────────────────
-const isProtected = createRouteMatcher([
-  '/home(.*)',
-  '/dashboard(.*)',
-  '/ai(.*)',
-  '/profile(.*)',
-  '/feed(.*)',
-  '/skill-tree(.*)',
-  '/videos(.*)',
-]);
-
-const isPublic = createRouteMatcher([
-  '/auth/login/sso-callback(.*)',
-  '/auth/register/sso-callback(.*)',
-  '/auth/login(.*)',
-  '/auth/register(.*)',
-  '/',
-  '/blogs(.*)',
-]);
-
-export default clerkMiddleware(async (auth, req: NextRequest) => {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
@@ -151,20 +100,56 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   }
 
   // 5. Method validation
+  const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
   if (!ALLOWED_METHODS.includes(req.method)) {
     return new NextResponse('Method Not Allowed', { status: 405 });
   }
 
-  // 6. Clerk auth protection for protected routes
-  if (isProtected(req)) {
-    await auth.protect();
+  // 6. Protected page redirect — no token → login
+  const isProtectedPage = PROTECTED_PREFIXES.some(p => pathname.startsWith(p));
+  if (isProtectedPage) {
+    const token =
+      req.cookies.get('nexus_token')?.value ??
+      req.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = '/auth/login';
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
-  // 7. Add security headers
+  // 7. Security headers
   const res = NextResponse.next();
-  addSecurityHeaders(res);
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('X-XSS-Protection', '1; mode=block');
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self "https://js.stripe.com")');
+  res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  res.headers.set('X-DNS-Prefetch-Control', 'off');
+  res.headers.set('X-Download-Options', 'noopen');
+  res.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  res.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://accounts.google.com https://cdnjs.cloudflare.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https://images.unsplash.com https://lh3.googleusercontent.com https://img.youtube.com https://*.supabase.co https://avatars.githubusercontent.com",
+      "connect-src 'self' https://*.supabase.co https://api.stripe.com https://accounts.google.com",
+      "frame-src https://js.stripe.com https://hooks.stripe.com https://accounts.google.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join('; ')
+  );
+
   return res;
-});
+}
 
 export const config = {
   matcher: [
