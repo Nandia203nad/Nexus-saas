@@ -166,7 +166,7 @@ export default function VideosPage() {
   }
 
   return (
-    <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+    <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <Navbar />
 
       {selected && (
@@ -174,7 +174,7 @@ export default function VideosPage() {
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(8px)' }}
           onClick={event => { if (event.target === event.currentTarget) setSelected(null); }}
         >
-          <div style={{ width: '100%', maxWidth: 920, background: 'var(--bg2)', border: '1px solid rgba(99,179,237,0.2)', borderRadius: 'var(--card-radius)', overflow: 'hidden', animation: 'fadeUp 0.3s ease' }}>
+          <div style={{ width: '100%', maxWidth: 920, background: 'var(--glass)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid var(--border2)', borderRadius: 'var(--card-radius)', overflow: 'hidden', animation: 'fadeUp 0.3s ease' }}>
             <div style={{ position: 'relative', paddingTop: '56.25%', background: '#000' }}>
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/${selected.yt}?autoplay=1&rel=0&modestbranding=1`}

@@ -169,7 +169,7 @@ export default function AIPage() {
   const res = result?.result as Record<string, unknown> | undefined;
 
   return (
-    <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+    <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <Navbar />
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -194,7 +194,7 @@ export default function AIPage() {
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
           {TABS.map(t => (
             <button key={t.k} onClick={() => { setActive(t.k); setResult(null); }}
-              style={{ padding: '10px 14px', background: active === t.k ? `${t.c}18` : 'rgba(99,179,237,0.03)', border: `1px solid ${active === t.k ? t.c : 'rgba(99,179,237,0.1)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 7, boxShadow: active === t.k ? `0 0 12px ${t.c}33` : 'none' }}>
+              style={{ padding: '10px 14px', background: active === t.k ? `${t.c}18` : 'var(--glass)', border: `1px solid ${active === t.k ? t.c : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 7, boxShadow: active === t.k ? `0 0 12px ${t.c}33` : 'none' }}>
               <span style={{ fontSize: '1rem' }}>{t.i}</span>
               <span style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '.6rem', color: active === t.k ? t.c : 'var(--text3)', letterSpacing: '.05em' }}>{t.l}</span>
             </button>

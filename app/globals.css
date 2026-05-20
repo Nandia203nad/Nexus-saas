@@ -200,6 +200,104 @@ textarea.input{resize:vertical;min-height:120px;line-height:1.6}
   --teal: #0ba4a0;
   --coral: #ff6b8a;
   --teal-light: #c8f7f5;
+  /* Nav vars */
+  --nav-bg: rgba(5,8,16,0.75);
+  --nav-bg-scrolled: rgba(5,8,16,0.96);
+  --nav-border: rgba(99,179,237,0.12);
 }
 /* bob animation for landing page floating badges */
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+
+/* ── GALAXY ANIMATIONS ── */
+@keyframes starTwinkle{0%,100%{opacity:var(--sop,0.3);transform:scale(1)}50%{opacity:min(1,calc(var(--sop,0.3)*2.8));transform:scale(1.5)}}
+@keyframes nebulaFloat{0%,100%{transform:translate(0,0) scale(1);opacity:.65}33%{transform:translate(22px,-16px) scale(1.06);opacity:.85}66%{transform:translate(-14px,12px) scale(.96);opacity:.5}}
+@keyframes nebulaFloat2{0%,100%{transform:translate(0,0) scale(1);opacity:.55}40%{transform:translate(-18px,20px) scale(1.04);opacity:.75}70%{transform:translate(14px,-10px) scale(.98);opacity:.45}}
+@keyframes galaxyNodePulse{0%,100%{filter:brightness(1) drop-shadow(0 0 6px currentColor)}50%{filter:brightness(1.25) drop-shadow(0 0 16px currentColor)}}
+@keyframes constellationGlow{0%,100%{stroke-opacity:.45}50%{stroke-opacity:.9}}
+
+/* ── GALAXY GLASS PANELS ── */
+.galaxy-glass{
+  background:rgba(8,5,24,0.82);
+  backdrop-filter:blur(40px) saturate(200%);
+  -webkit-backdrop-filter:blur(40px) saturate(200%);
+  border-radius:16px;
+}
+.galaxy-glass-teal{
+  background:rgba(4,12,26,0.84);
+  backdrop-filter:blur(40px) saturate(200%);
+  -webkit-backdrop-filter:blur(40px) saturate(200%);
+}
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-toggle{
+  width:36px;height:36px;border-radius:50%;
+  display:grid;place-items:center;
+  border:1px solid var(--border2);
+  background:rgba(99,179,237,0.06);
+  cursor:pointer;font-size:1rem;
+  transition:all .22s;flex-shrink:0;
+}
+.theme-toggle:hover{background:rgba(99,179,237,0.14);border-color:var(--cyan);box-shadow:0 0 12px rgba(99,179,237,0.2)}
+
+/* ═══════════════════════════════════════
+   LIGHT THEME
+═══════════════════════════════════════ */
+[data-theme="light"]{
+  --bg:#f0f4fb;--bg2:#e8eef8;--bg3:#dde6f5;
+  --surface:rgba(255,255,255,0.92);
+  --border:rgba(88,130,200,0.2);--border2:rgba(88,130,200,0.38);
+  --cyan:#2070c8;--cyan2:#1a5fb0;--cyan-glow:#1a8fff;
+  --purple:#6d28d9;--magenta:#be185d;
+  --green:#166534;--orange:#c2410c;--yellow:#92400e;
+  --text:#1a202c;--text2:#4a5568;--text3:#718096;
+  --glass:rgba(255,255,255,0.82);
+  --glass-light:rgba(255,255,255,0.68);
+  --glow:0 0 20px rgba(88,130,200,0.18);
+  --glow-lg:0 0 40px rgba(88,130,200,0.1);
+  --shadow:0 4px 20px rgba(0,0,0,0.1);
+  --shadow-lg:0 8px 40px rgba(0,0,0,0.14);
+  --nav-bg:rgba(240,244,251,0.86);
+  --nav-bg-scrolled:rgba(240,244,251,0.97);
+  --nav-border:rgba(88,130,200,0.14);
+}
+[data-theme="light"] body{background:var(--bg);color:var(--text)}
+[data-theme="light"] ::-webkit-scrollbar-track{background:var(--bg2)}
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:var(--cyan2)}
+[data-theme="light"] .cyber-bg::before{
+  background:radial-gradient(ellipse 70% 60% at 15% 10%,rgba(88,130,200,0.07),transparent 60%),
+    radial-gradient(ellipse 60% 70% at 85% 85%,rgba(159,100,234,0.05),transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 50%,rgba(190,24,93,0.03),transparent 70%)
+}
+[data-theme="light"] .cyber-bg::after{
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(88,130,200,0.012) 2px,rgba(88,130,200,0.012) 4px)
+}
+[data-theme="light"] .grid-lines{
+  background-image:linear-gradient(rgba(88,130,200,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(88,130,200,0.05) 1px,transparent 1px);
+}
+[data-theme="light"] .glass-card{background:rgba(255,255,255,0.84);border-color:rgba(88,130,200,0.15)}
+[data-theme="light"] .glass-card::before{background:linear-gradient(135deg,rgba(88,130,200,0.04),transparent 60%,rgba(109,40,217,0.02))}
+[data-theme="light"] .blog-card{background:rgba(255,255,255,0.86);border-color:rgba(88,130,200,0.14)}
+[data-theme="light"] .blog-card:hover{border-color:rgba(88,130,200,0.4);box-shadow:var(--glow),0 20px 50px rgba(0,0,0,0.12)}
+[data-theme="light"] .vid-card{background:rgba(255,255,255,0.86);border-color:rgba(88,130,200,0.14)}
+[data-theme="light"] .vid-card:hover{border-color:rgba(88,130,200,0.4)}
+[data-theme="light"] .plan-card{background:rgba(255,255,255,0.84);border-color:rgba(88,130,200,0.14)}
+[data-theme="light"] .input{background:rgba(255,255,255,0.9);color:var(--text);border-color:rgba(88,130,200,0.22)}
+[data-theme="light"] .input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(88,130,200,0.12)}
+[data-theme="light"] .input::placeholder{color:var(--text3)}
+[data-theme="light"] .nav-link{color:var(--text2)}
+[data-theme="light"] .nav-link:hover,[data-theme="light"] .nav-link.active{color:var(--cyan);background:rgba(88,130,200,0.08);border-color:rgba(88,130,200,0.18)}
+[data-theme="light"] .btn-primary{color:#fff}
+[data-theme="light"] .btn-secondary{color:var(--cyan);border-color:var(--border2)}
+[data-theme="light"] .btn-ghost{color:var(--text2)}
+[data-theme="light"] .btn-ghost:hover{color:var(--text);background:rgba(88,130,200,0.07)}
+[data-theme="light"] .divider{background:linear-gradient(90deg,transparent,rgba(88,130,200,0.2),rgba(109,40,217,0.12),transparent)}
+[data-theme="light"] .tag-pill{opacity:.92}
+[data-theme="light"] .theme-toggle{border-color:rgba(88,130,200,0.28);background:rgba(88,130,200,0.07)}
+[data-theme="light"] .theme-toggle:hover{background:rgba(88,130,200,0.14);box-shadow:0 0 10px rgba(88,130,200,0.18)}
+[data-theme="light"] .b-cyan{background:rgba(32,112,200,0.1);color:var(--cyan);border-color:rgba(32,112,200,0.25)}
+[data-theme="light"] .b-purple{background:rgba(109,40,217,0.1);color:var(--purple);border-color:rgba(109,40,217,0.25)}
+[data-theme="light"] .b-green{background:rgba(22,101,52,0.1);color:var(--green);border-color:rgba(22,101,52,0.25)}
+/* Light mode prose */
+[data-theme="light"] .prose p,[data-theme="light"] .prose ul,[data-theme="light"] .prose ol{color:var(--text2)}
+[data-theme="light"] .prose h1,[data-theme="light"] .prose h3{color:var(--text)}
+[data-theme="light"] .prose h2{color:var(--cyan)}

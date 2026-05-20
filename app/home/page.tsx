@@ -42,9 +42,9 @@ export default function HomePage() {
   const sorted = [...blogs].sort((a,b)=>sortBy==='views'?b.views-a.views:sortBy==='likes'?b._count.likes-a._count.likes:new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime());
 
   return (
-    <div style={{position:'relative',zIndex:1,minHeight:'100vh'}}>
+    <div style={{position:'relative',zIndex:1,minHeight:'100vh',background:'var(--bg)',color:'var(--text)'}}>
       <Navbar />
-      <div style={{paddingTop:24,paddingBottom:22,borderBottom:'1px solid rgba(99,179,237,0.08)'}}>
+      <div style={{paddingTop:24,paddingBottom:22,borderBottom:'1px solid var(--border)'}}>
         <div className="container">
           <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',flexWrap:'wrap',gap:16,marginBottom:18}}>
             <div>
@@ -112,7 +112,7 @@ export default function HomePage() {
           <div style={{position:'sticky',top:80,display:'flex',flexDirection:'column',gap:16}}>
             <FollowSuggestions compact={true} />
             {/* Quick links */}
-            <div style={{background:'var(--glass)',border:'1px solid var(--border)',borderRadius:'var(--card-radius)',padding:16,backdropFilter:'blur(16px)'}}>
+            <div style={{background:'var(--glass)',border:'1px solid var(--border)',borderRadius:'var(--card-radius)',padding:16,backdropFilter:'blur(16px)',WebkitBackdropFilter:'blur(16px)'}}>
               <div style={{fontFamily:'JetBrains Mono,monospace',fontSize:'.6rem',color:'var(--cyan)',marginBottom:12,letterSpacing:'.08em'}}>QUICK LINKS</div>
               {[['/skill-tree','🌳 Skill Tree'],['/feed','📰 My Feed'],['/ai','🤖 AI Agent'],['/videos','🎬 Videos'],['/dashboard','📊 Dashboard']].map(([href,label])=>(
                 <a key={href} href={href} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',color:'var(--text2)',textDecoration:'none',fontSize:'.84rem',borderBottom:'1px solid rgba(99,179,237,0.06)',transition:'color .2s'}}

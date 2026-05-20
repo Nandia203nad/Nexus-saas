@@ -49,9 +49,9 @@ function BlogsContent() {
   };
 
   return (
-    <div style={{position:'relative',zIndex:1,minHeight:'100vh'}}>
+    <div style={{position:'relative',zIndex:1,minHeight:'100vh',background:'var(--bg)',color:'var(--text)'}}>
       <Navbar />
-      <div style={{paddingTop:24,paddingBottom:22,borderBottom:'1px solid rgba(99,179,237,0.08)'}}>
+      <div style={{paddingTop:24,paddingBottom:22,borderBottom:'1px solid var(--border)'}}>
         <div className="container">
           <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',flexWrap:'wrap',gap:14,marginBottom:16}}>
             <div>

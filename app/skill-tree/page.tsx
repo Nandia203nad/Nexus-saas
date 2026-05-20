@@ -14,6 +14,16 @@ import {
   SkillTreeNode,
 } from '@/lib/skill-tree-data';
 
+// Deterministic pseudo-random stars (no hydration mismatch)
+const GALAXY_STARS = Array.from({ length: 220 }, (_, i) => ({
+  cx: ((Math.abs(Math.sin(i * 137.508 + 2.1)) * 10000) % 1000).toFixed(1),
+  cy: ((Math.abs(Math.cos(i * 137.508 + 1.4)) * 10000) % 700).toFixed(1),
+  r: i % 11 === 0 ? 1.8 : i % 5 === 0 ? 1.1 : 0.6,
+  opacity: (0.12 + (i % 7) * 0.1).toFixed(2),
+  dur: (2.2 + (i % 5) * 0.7).toFixed(1),
+  delay: ((i % 6) * 0.55).toFixed(1),
+}));
+
 type UserState = {
   id: string;
   name: string;
@@ -307,64 +317,110 @@ export default function SkillTreePage() {
     <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', overflowX: 'hidden' }}>
       <Navbar />
       <style>{`
-        @keyframes treePulse { 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:.9;transform:scale(1.12)} }
-        @keyframes outerRing { 0%,100%{opacity:.2;r:28} 50%{opacity:.7;r:32} }
+        /* ── GALAXY KEYFRAMES ── */
+        @keyframes treePulse { 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:.9;transform:scale(1.15)} }
         @keyframes dashFlow { to { stroke-dashoffset: -44; } }
-        @keyframes nodeFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
-        @keyframes branchGlow { 0%,100%{opacity:.5} 50%{opacity:1} }
-        @keyframes modalSlide { from{opacity:0;transform:translateY(18px) scale(.98)} to{opacity:1;transform:translateY(0) scale(1)} }
-        @keyframes quizGlow { 0%,100%{box-shadow:0 0 0 0 rgba(120,245,223,0),transform:scale(1)} 50%{box-shadow:0 0 22px 4px rgba(120,245,223,0.35);transform:scale(1.02)} }
-        .tree-node { transition: filter .2s; }
-        .tree-node:hover { filter: brightness(1.35) drop-shadow(0 0 8px currentColor); }
+        @keyframes branchGlow { 0%,100%{opacity:.45} 50%{opacity:1} }
+        @keyframes modalSlide { from{opacity:0;transform:translateY(20px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes quizGlow { 0%,100%{box-shadow:0 0 0 0 rgba(120,245,223,0)} 50%{box-shadow:0 0 24px 5px rgba(120,245,223,0.38)} }
+        @keyframes starTwinkle { 0%,100%{opacity:var(--sop,.3)} 50%{opacity:min(1,calc(var(--sop,.3)*2.6))} }
+        @keyframes nebulaFloat { 0%,100%{transform:translate(0,0) scale(1);opacity:.62} 33%{transform:translate(24px,-18px) scale(1.07);opacity:.85} 66%{transform:translate(-16px,14px) scale(.95);opacity:.48} }
+        @keyframes nebulaFloat2 { 0%,100%{transform:translate(0,0) scale(1);opacity:.5} 45%{transform:translate(-20px,22px) scale(1.05);opacity:.72} 75%{transform:translate(16px,-12px) scale(.97);opacity:.4} }
+        @keyframes crystalShimmer { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.22)} }
+        @keyframes glowRingPulse { 0%,100%{opacity:.18;r:var(--gr,32)} 50%{opacity:.55;r:calc(var(--gr,32) + 5)} }
+
+        /* ── LAYOUT ── */
+        .tree-node { transition: filter .22s, transform .22s; cursor: pointer; }
+        .tree-node:hover { filter: brightness(1.4) drop-shadow(0 0 10px currentColor); transform-origin: center; }
         .skill-shell {
           min-height: calc(100vh - 62px);
           padding-top: 62px;
           display: grid;
-          grid-template-columns: 230px minmax(520px, 1fr) 292px;
-          background:
-            linear-gradient(90deg, rgba(0,0,0,.48), transparent 16%, transparent 84%, rgba(0,0,0,.48)),
-            radial-gradient(circle at 50% 45%, rgba(120,245,223,.18), transparent 34%),
-            url('/skilltree.jpg') center/cover no-repeat;
+          grid-template-columns: 234px minmax(520px, 1fr) 296px;
+          position: relative;
+          background: #030510;
         }
         .skill-shell::before {
           content: '';
           position: fixed;
           inset: 62px 0 0;
-          background: rgba(4,10,18,.78);
+          background:
+            radial-gradient(ellipse 80% 70% at 50% 30%, rgba(90,40,200,.10) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 60% at 15% 70%, rgba(20,140,200,.08) 0%, transparent 50%),
+            radial-gradient(ellipse 55% 55% at 85% 20%, rgba(200,40,120,.06) 0%, transparent 50%);
           pointer-events: none;
+          z-index: 0;
         }
         .left-rail, .tree-stage, .right-monitor { min-width: 0; }
-        .tree-node:hover .node-main { filter: brightness(1.24); }
-        .topic-row:hover { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.22) !important; transform: translateX(2px); }
-        .modal-backdrop { position:fixed;inset:0;z-index:2200;display:flex;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.72);backdrop-filter:blur(14px);padding:20px;overflow-y:auto; }
-        .modal-card { position:relative;width:100%;max-width:980px;max-height:calc(100vh - 40px);margin:auto 0;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(170deg,rgba(14,20,34,.98),rgba(6,10,18,.99));border:1px solid rgba(142,231,255,.24);border-radius:18px;box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 60px rgba(142,231,255,.08);animation:modalSlide .24s ease; }
-        .modal-body { flex:1;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:0; }
-        .modal-left { padding:24px 22px;border-right:1px solid rgba(255,255,255,.07);overflow-y:auto; }
-        .modal-right { padding:20px 18px;overflow-y:auto;background:rgba(0,0,0,.22); }
-        .modal-comments { padding:18px 22px;border-top:1px solid rgba(255,255,255,.07); }
-        .ai-card { border-radius:12px;padding:14px 16px;margin-top:10px; }
-        @media (max-width: 1180px) {
-          .skill-shell { grid-template-columns: 210px minmax(480px, 1fr); }
+
+        /* ── LEFT RAIL ── */
+        .left-rail {
+          background: rgba(8,4,22,0.84) !important;
+          backdrop-filter: blur(44px) saturate(200%) !important;
+          -webkit-backdrop-filter: blur(44px) saturate(200%) !important;
+          border-right: 1px solid rgba(160,90,255,0.22) !important;
+          box-shadow: inset -1px 0 30px rgba(100,40,220,0.07), 2px 0 20px rgba(0,0,0,0.3) !important;
+        }
+        /* ── RIGHT MONITOR ── */
+        .right-monitor {
+          background: rgba(4,10,24,0.86) !important;
+          backdrop-filter: blur(44px) saturate(200%) !important;
+          -webkit-backdrop-filter: blur(44px) saturate(200%) !important;
+          border-left: 1px solid rgba(60,200,230,0.2) !important;
+          box-shadow: inset 1px 0 30px rgba(20,160,220,0.06), -2px 0 20px rgba(0,0,0,0.28) !important;
+        }
+
+        /* ── TOPIC ROW HOVER ── */
+        .topic-row:hover { background: rgba(255,255,255,.07) !important; border-color: rgba(160,90,255,.3) !important; transform: translateX(3px); }
+
+        /* ── MODAL ── */
+        .modal-backdrop { position:fixed;inset:0;z-index:2200;display:flex;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:20px;overflow-y:auto; }
+        .modal-card {
+          position:relative;width:100%;max-width:1000px;max-height:calc(100vh - 40px);
+          margin:auto 0;overflow:hidden;display:flex;flex-direction:column;
+          background:linear-gradient(160deg,rgba(10,5,28,.98),rgba(4,8,20,.99));
+          border:1px solid rgba(140,80,255,.28);
+          border-radius:22px;
+          box-shadow:
+            0 40px 100px rgba(0,0,0,.72),
+            0 0 80px rgba(120,50,255,.08),
+            inset 0 1px 0 rgba(255,255,255,.06),
+            inset 0 -1px 0 rgba(120,50,255,.06);
+          animation:modalSlide .26s cubic-bezier(.22,1,.36,1);
+        }
+        .modal-card::before {
+          content:'';position:absolute;inset:0;pointer-events:none;border-radius:22px;
+          background:linear-gradient(135deg,rgba(160,90,255,.04) 0%,transparent 50%,rgba(60,200,230,.03) 100%);
+        }
+        .modal-body { flex:1;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:0; }
+        .modal-left { padding:26px 24px;border-right:1px solid rgba(255,255,255,.06);overflow-y:auto; }
+        .modal-right { padding:22px 20px;overflow-y:auto;background:rgba(0,0,0,.18); }
+        .modal-comments { padding:18px 24px;border-top:1px solid rgba(255,255,255,.06); }
+        .ai-card { border-radius:14px;padding:14px 16px;margin-top:10px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1200px) {
+          .skill-shell { grid-template-columns: 220px minmax(480px, 1fr); }
           .right-monitor { display: none; }
         }
         @media (max-width: 820px) {
           .skill-shell { grid-template-columns: 1fr; min-height: 100vh; overflow: visible; }
           .skill-shell::before { position: absolute; inset: 62px 0 0; }
-          .left-rail { order: 1; border-right: 0 !important; border-bottom: 1px solid rgba(142,231,255,.18); max-height: none; }
+          .left-rail { order: 1; border-right: 0 !important; border-bottom: 1px solid rgba(160,90,255,.2) !important; max-height: none; }
           .tree-stage { order: 2; min-height: 620px; overflow: visible !important; }
-          .right-monitor { order: 3; display: block; border-left: 0 !important; border-top: 1px solid rgba(142,231,255,.18); }
+          .right-monitor { order: 3; display: block; border-left: 0 !important; border-top: 1px solid rgba(60,200,230,.18) !important; }
           .modal-backdrop { padding: 10px; }
-          .modal-card { max-height: calc(100vh - 20px); border-radius: 14px; }
+          .modal-card { max-height: calc(100vh - 20px); border-radius: 16px; }
           .modal-body { grid-template-columns: 1fr; }
           .modal-left { border-right: 0; }
-          .modal-right { border-top:1px solid rgba(255,255,255,.07); }
+          .modal-right { border-top:1px solid rgba(255,255,255,.06); }
         }
       `}</style>
 
       <main className="skill-shell">
-        <aside className="left-rail" style={{ position: 'relative', zIndex: 2, padding: 16, borderRight: '1px solid rgba(142,231,255,.18)', background: 'linear-gradient(180deg, rgba(35,28,20,.86), rgba(6,10,18,.9))', overflowY: 'auto' }}>
-          <div className="rail-title" style={{ border: '1px solid rgba(231,196,119,.35)', borderRadius: 8, padding: '9px 11px', marginBottom: 12, color: '#e7c477', fontFamily: 'JetBrains Mono,monospace', fontSize: '.7rem', fontWeight: 800 }}>
-            NEXUS PLATFORM
+        <aside className="left-rail" style={{ position: 'relative', zIndex: 2, padding: 16, overflowY: 'auto' }}>
+          <div className="rail-title" style={{ border: '1px solid rgba(160,90,255,.35)', borderRadius: 10, padding: '9px 11px', marginBottom: 14, color: '#c084fc', fontFamily: 'JetBrains Mono,monospace', fontSize: '.68rem', fontWeight: 800, letterSpacing: '.12em', background: 'rgba(140,60,255,.08)', boxShadow: '0 0 14px rgba(140,60,255,.1)' }}>
+            ✦ NEXUS GALAXY
           </div>
 
           <div style={{ display: 'grid', gap: 6 }}>
@@ -441,43 +497,67 @@ export default function SkillTreePage() {
           </div>
         </aside>
 
-        <section className="tree-stage" style={{ position: 'relative', zIndex: 2, minHeight: 'calc(100vh - 62px)', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(142,231,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(142,231,255,.045) 1px, transparent 1px)', backgroundSize: '44px 44px' }} />
-          <header style={{ position: 'absolute', top: 20, left: 24, right: 24, textAlign: 'center', zIndex: 4, pointerEvents: 'none' }}>
-            <div style={{ color: '#8ee7ff', fontFamily: 'JetBrains Mono,monospace', fontSize: '.62rem', letterSpacing: '.22em' }}>BLOG SKILL TREE PLATFORM</div>
-            <h1 style={{ color: '#d9fbff', textShadow: '0 0 18px rgba(142,231,255,.55)', fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', margin: '4px 0 0', letterSpacing: 0 }}>Creative Growth Map</h1>
+        <section className="tree-stage" style={{ position: 'relative', zIndex: 2, minHeight: 'calc(100vh - 62px)', overflow: 'hidden', background: 'transparent' }}>
+
+          {/* Galaxy nebula orbs */}
+          <div style={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(110,40,220,.14) 0%, transparent 68%)', top: -200, right: -120, filter: 'blur(70px)', pointerEvents: 'none', zIndex: 1, animation: 'nebulaFloat 18s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', width: 550, height: 550, borderRadius: '50%', background: 'radial-gradient(circle, rgba(20,160,210,.11) 0%, transparent 68%)', bottom: -160, left: -80, filter: 'blur(60px)', pointerEvents: 'none', zIndex: 1, animation: 'nebulaFloat2 22s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(220,40,120,.08) 0%, transparent 68%)', top: '30%', left: '35%', filter: 'blur(80px)', pointerEvents: 'none', zIndex: 1, animation: 'nebulaFloat 28s ease-in-out 4s infinite reverse' }} />
+          <div style={{ position: 'absolute', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(40,220,180,.07) 0%, transparent 68%)', bottom: '20%', right: '10%', filter: 'blur(60px)', pointerEvents: 'none', zIndex: 1, animation: 'nebulaFloat2 16s ease-in-out 2s infinite' }} />
+
+          {/* Cosmic grid */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 2, backgroundImage: 'linear-gradient(rgba(142,231,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(142,231,255,.03) 1px, transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
+
+          {/* Star field SVG */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 2, pointerEvents: 'none' }} preserveAspectRatio="xMidYMid slice">
+            {GALAXY_STARS.map((s, i) => (
+              <circle key={i} cx={s.cx} cy={s.cy} r={s.r} fill="white"
+                style={{ opacity: s.opacity, animation: `starTwinkle ${s.dur}s ease-in-out ${s.delay}s infinite`, '--sop': s.opacity } as React.CSSProperties} />
+            ))}
+          </svg>
+          <header style={{ position: 'absolute', top: 22, left: 24, right: 24, textAlign: 'center', zIndex: 4, pointerEvents: 'none' }}>
+            <div style={{ color: '#c084fc', fontFamily: 'JetBrains Mono,monospace', fontSize: '.6rem', letterSpacing: '.26em', textShadow: '0 0 10px rgba(192,132,252,.5)' }}>✦ NEXUS GALAXY SKILL TREE ✦</div>
+            <h1 style={{ background: 'linear-gradient(135deg,#c084fc 0%,#8ee7ff 50%,#f9a8d4 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', textShadow: 'none', filter: 'drop-shadow(0 0 18px rgba(192,132,252,.35))', fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', margin: '5px 0 0', letterSpacing: '.01em', fontWeight: 900 }}>Creative Growth Map</h1>
           </header>
 
-          <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 3 }}>
+          <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 3, overflow: 'visible' }}>
             <defs>
-              <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="6" result="blur" />
+              <filter id="nodeGlow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="7" result="blur" />
                 <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
               <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
-                <feGaussianBlur stdDeviation="10" result="blur" />
+                <feGaussianBlur stdDeviation="12" result="blur" />
                 <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
-              <radialGradient id="coreFill" cx="40%" cy="35%">
-                <stop offset="0%" stopColor="#d9fbff" stopOpacity=".75" />
-                <stop offset="55%" stopColor="#8ee7ff" stopOpacity=".4" />
-                <stop offset="100%" stopColor="#07101b" stopOpacity=".95" />
-              </radialGradient>
-              <radialGradient id="starterGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(142,231,255,0.35)" />
-                <stop offset="100%" stopColor="rgba(142,231,255,0)" />
+              <filter id="superGlow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur stdDeviation="18" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+              <radialGradient id="coreFill" cx="38%" cy="32%">
+                <stop offset="0%" stopColor="#e8feff" stopOpacity=".88" />
+                <stop offset="45%" stopColor="#8ee7ff" stopOpacity=".55" />
+                <stop offset="100%" stopColor="#040a18" stopOpacity=".97" />
               </radialGradient>
               <radialGradient id="bgVignette" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(142,231,255,0.04)" />
+                <stop offset="0%" stopColor="rgba(142,231,255,0.06)" />
+                <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+              </radialGradient>
+              <radialGradient id="galaxyCenter" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="rgba(100,50,220,0.12)" />
+                <stop offset="60%" stopColor="rgba(20,140,200,0.06)" />
                 <stop offset="100%" stopColor="rgba(0,0,0,0)" />
               </radialGradient>
             </defs>
 
-            {/* Ambient glow rings around center */}
+            {/* Galaxy center glow */}
+            <circle cx="500" cy="360" r="320" fill="url(#galaxyCenter)" />
             <circle cx="500" cy="360" r="280" fill="url(#bgVignette)" />
-            <circle cx="500" cy="360" r="260" fill="none" stroke="rgba(142,231,255,.06)" strokeWidth="1" strokeDasharray="6 14" />
-            <circle cx="500" cy="360" r="180" fill="none" stroke="rgba(231,196,119,.06)" strokeWidth="1" strokeDasharray="4 12" />
-            <circle cx="500" cy="360" r="100" fill="none" stroke="rgba(142,231,255,.08)" strokeWidth="1" />
+            {/* Constellation orbit rings */}
+            <circle cx="500" cy="360" r="268" fill="none" stroke="rgba(140,80,255,.07)" strokeWidth="1" strokeDasharray="3 18" />
+            <circle cx="500" cy="360" r="190" fill="none" stroke="rgba(60,200,230,.07)" strokeWidth="1" strokeDasharray="4 14" />
+            <circle cx="500" cy="360" r="110" fill="none" stroke="rgba(220,40,120,.06)" strokeWidth="1" strokeDasharray="2 10" />
+            <circle cx="500" cy="360" r="50" fill="none" stroke="rgba(142,231,255,.10)" strokeWidth="1" />
 
             {/* Organic cubic bezier branches */}
             {SKILL_TREE_NODES.flatMap(parent => parent.children.map(childId => {
@@ -535,40 +615,52 @@ export default function SkillTreePage() {
                 <g key={node.id} className="tree-node" transform={`translate(${x} ${y})`}
                   onClick={() => handleNodeClick(node)} style={{ cursor: 'pointer' }}>
 
-                  {/* Outermost ambient glow (pulsing) */}
+                  {/* Outermost galaxy glow (pulsing) */}
                   {lit && (
-                    <circle r={sz + 22} fill="none"
-                      stroke={node.color} strokeWidth="1.5" opacity=".22"
-                      style={{ animation: 'treePulse 2.6s ease-in-out infinite', animationDelay: `${(node.x * 0.3) % 1.2}s` }}
-                    />
+                    <>
+                      <circle r={sz + 28} fill="none"
+                        stroke={node.color} strokeWidth="1" opacity=".14"
+                        filter="url(#softGlow)"
+                        style={{ animation: 'treePulse 3s ease-in-out infinite', animationDelay: `${(node.x * 0.25) % 1.4}s` }}
+                      />
+                      <circle r={sz + 20} fill="none"
+                        stroke={node.color} strokeWidth="1.5" opacity=".25"
+                        style={{ animation: 'treePulse 2.4s ease-in-out infinite', animationDelay: `${(node.x * 0.3) % 1.2}s` }}
+                      />
+                    </>
                   )}
 
-                  {/* Outer ring - double ring effect */}
+                  {/* Outer crystal ring */}
                   <circle r={sz + 13}
-                    fill={lit ? `${node.color}0c` : 'rgba(0,0,0,.18)'}
-                    stroke={lit ? `${node.color}55` : 'rgba(255,255,255,.08)'}
+                    fill={lit ? `${node.color}0e` : 'rgba(0,0,0,.20)'}
+                    stroke={lit ? `${node.color}44` : 'rgba(255,255,255,.06)'}
                     strokeWidth="1"
+                    strokeDasharray={isAvailable && !isComplete ? '5 4' : undefined}
+                    style={isAvailable && !isComplete ? { animation: 'dashFlow 3s linear infinite' } : undefined}
                   />
 
-                  {/* Middle ring */}
+                  {/* Middle glow ring */}
                   <circle r={sz + 6}
-                    fill={isComplete ? `${node.color}1a` : 'rgba(5,9,18,.75)'}
+                    fill={isComplete ? `${node.color}22` : 'rgba(5,8,20,.78)'}
                     stroke={ringColor}
-                    strokeWidth={isSelected ? 3 : 1.8}
+                    strokeWidth={isSelected ? 3.5 : 2}
                     filter={lit ? 'url(#nodeGlow)' : undefined}
                   />
 
-                  {/* Inner core */}
+                  {/* Inner core — galaxy glass */}
                   <circle r={sz}
-                    fill={isStarter ? 'url(#coreFill)' : isComplete ? `${node.color}2e` : isAvailable ? `${node.color}1a` : 'rgba(6,10,20,.9)'}
-                    stroke={isComplete ? node.color : isAvailable ? `${node.color}88` : 'rgba(148,163,184,.3)'}
-                    strokeWidth="1.5"
+                    fill={isStarter ? 'url(#coreFill)' : isComplete ? `${node.color}38` : isAvailable ? `${node.color}22` : 'rgba(6,8,22,.92)'}
+                    stroke={isComplete ? node.color : isAvailable ? `${node.color}99` : 'rgba(120,130,160,.28)'}
+                    strokeWidth="1.8"
+                    filter={isComplete ? 'url(#superGlow)' : undefined}
                   />
 
-                  {/* Inner gloss highlight */}
-                  <ellipse rx={sz * 0.52} ry={sz * 0.28} cx={-sz * 0.14} cy={-sz * 0.32}
-                    fill="rgba(255,255,255,.07)"
+                  {/* Crystal highlight (top-left gloss) */}
+                  <ellipse rx={sz * 0.55} ry={sz * 0.3} cx={-sz * 0.18} cy={-sz * 0.34}
+                    fill="rgba(255,255,255,.09)"
                   />
+                  {/* Second highlight dot */}
+                  {lit && <circle r={sz * 0.18} cx={-sz * 0.42} cy={-sz * 0.44} fill="rgba(255,255,255,.12)" />}
 
                   {/* Content: lock icon or node icon */}
                   {isLocked ? (
@@ -643,7 +735,7 @@ export default function SkillTreePage() {
           {error && <div style={{ position: 'absolute', left: 24, bottom: 24, zIndex: 6, maxWidth: 420, padding: 12, borderRadius: 10, border: '1px solid rgba(252,129,129,.35)', background: 'rgba(45,10,15,.78)', color: '#ffb4b4', fontSize: '.82rem' }}>{error}</div>}
         </section>
 
-        <aside className="right-monitor" style={{ position: 'relative', zIndex: 2, padding: 16, borderLeft: '1px solid rgba(142,231,255,.18)', background: 'linear-gradient(180deg, rgba(9,18,28,.9), rgba(5,8,16,.94))', overflowY: 'auto' }}>
+        <aside className="right-monitor" style={{ position: 'relative', zIndex: 2, padding: 16, overflowY: 'auto' }}>
           <div style={{ border: '1px solid rgba(142,231,255,.32)', borderRadius: 14, padding: 14, background: 'rgba(142,231,255,.07)', boxShadow: 'inset 0 0 24px rgba(142,231,255,.08)' }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <div style={{ width: 68, height: 68, borderRadius: 14, border: `2px solid ${planColor}`, overflow: 'hidden', background: `${planColor}22`, display: 'grid', placeItems: 'center', color: planColor, fontWeight: 900, fontSize: '1.1rem', flexShrink: 0 }}>
@@ -721,7 +813,7 @@ export default function SkillTreePage() {
       {topicModalOpen && (
         <div className="modal-backdrop" onClick={event => { if (event.target === event.currentTarget) setTopicModalOpen(false); }}>
           <div className="modal-card">
-            <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', gap: 14, alignItems: 'flex-start', flexShrink: 0, flexWrap: 'wrap' }}>
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(140,80,255,.12)', display: 'flex', gap: 14, alignItems: 'flex-start', flexShrink: 0, flexWrap: 'wrap', background: 'linear-gradient(135deg, rgba(120,50,255,.06), transparent 60%, rgba(20,160,210,.04))' }}>
               <div style={{ width: 46, height: 46, borderRadius: 12, background: `${activeTopic.color}1a`, border: `1.5px solid ${activeTopic.color}55`, display: 'grid', placeItems: 'center', color: activeTopic.color, fontWeight: 900, fontSize: '.85rem', flexShrink: 0 }}>{activeTopic.icon}</div>
               <div style={{ flex: 1, minWidth: 220 }}>
                 <div style={{ color: activeTopic.color, fontFamily: 'JetBrains Mono,monospace', fontSize: '.58rem', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 3 }}>BLOG TOPIC</div>

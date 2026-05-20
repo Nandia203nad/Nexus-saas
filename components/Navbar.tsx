@@ -35,6 +35,7 @@ const NAV = [
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const pathname = usePathname();
   const router = useRouter();
 
@@ -44,10 +45,21 @@ export default function Navbar() {
       if (stored) setUser(JSON.parse(stored));
     } catch {}
 
+    const saved = (localStorage.getItem('nexus_theme') as 'dark' | 'light' | null) || 'dark';
+    setTheme(saved);
+    document.documentElement.setAttribute('data-theme', saved);
+
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('nexus_theme', next);
+    document.documentElement.setAttribute('data-theme', next);
+  }
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -75,9 +87,9 @@ export default function Navbar() {
         justifyContent: 'space-between',
         gap: 12,
         padding: '0 24px',
-        background: scrolled ? 'rgba(5,8,16,0.94)' : 'rgba(5,8,16,0.75)',
+        background: scrolled ? 'var(--nav-bg-scrolled)' : 'var(--nav-bg)',
         backdropFilter: 'blur(20px)',
-        borderBottom: scrolled ? '1px solid rgba(99,179,237,0.12)' : '1px solid transparent',
+        borderBottom: scrolled ? '1px solid var(--nav-border)' : '1px solid transparent',
         transition: 'all 0.3s',
       }}
     >
@@ -116,6 +128,14 @@ export default function Navbar() {
       </div>
 
       <div className="site-nav-user">
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle"
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
         {user ? (
           <>
             <Link
