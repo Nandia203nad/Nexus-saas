@@ -121,6 +121,7 @@ export default function SkillTreePage() {
   const [aiResult, setAiResult] = useState<AiGenerateResult | AiAnalyzeResult | null>(null);
   const [tldrResult, setTldrResult] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [topicProgressMap, setTopicProgressMap] = useState<Record<string, TopicProgress | null>>({});
   const topicCache = useRef<Record<string, TopicState>>({});
   const quizSectionRef = useRef<HTMLDivElement>(null);
 
@@ -175,6 +176,7 @@ export default function SkillTreePage() {
         };
         topicCache.current[activeTopic.id] = state;
         setTopicState(state);
+        setTopicProgressMap(prev => ({ ...prev, [activeTopic.id]: data.progress || null }));
       })
       .catch(err => setError(err instanceof Error ? err.message : 'Topic failed to load'))
       .finally(() => setTopicLoading(false));
@@ -195,13 +197,10 @@ export default function SkillTreePage() {
   const anaResult = aiMode === 'analyze' ? (aiResult as AiAnalyzeResult) : null;
 
   function handleNodeClick(node: SkillTreeNode) {
-    const status = nodeStatus(node, completedIds, user?.plan);
     setSelected(node);
-    if (status === 'available' || status === 'complete') {
-      setUnlockedNodes(prev => new Set([...prev, node.id]));
-      const topicForNode = SKILL_TOPICS.find(t => t.category === node.category) ?? SKILL_TOPICS[0];
-      openTopic(topicForNode);
-    }
+    setUnlockedNodes(prev => new Set([...prev, node.id]));
+    const topicForNode = SKILL_TOPICS.find(t => t.category === node.category) ?? SKILL_TOPICS[0];
+    openTopic(topicForNode);
   }
 
   async function completeSkill(node: SkillTreeNode) {
@@ -252,6 +251,7 @@ export default function SkillTreePage() {
       };
       topicCache.current[activeTopic.id] = freshState;
       setTopicState(freshState);
+      setTopicProgressMap(prev => ({ ...prev, [activeTopic.id]: freshState.progress || null }));
       if (data.user) {
         setUser(data.user);
         localStorage.setItem('nexus_user', JSON.stringify(data.user));
@@ -397,6 +397,13 @@ export default function SkillTreePage() {
               {SKILL_TOPICS.map((topic, index) => {
                 const active = activeTopic.id === topic.id && topicModalOpen;
                 const totalTopicXp = topic.readXp + topic.quizXp;
+                const prog = topicProgressMap[topic.id];
+                const subtitle = prog?.quizPassed
+                  ? '✓ Quiz Passed'
+                  : prog?.read
+                    ? 'Read — Take Quiz!'
+                    : 'Click to read';
+                const subtitleColor = prog?.quizPassed ? '#78f5df' : prog?.read ? '#e7c477' : 'rgba(255,255,255,.34)';
                 return (
                   <button
                     key={topic.id}
@@ -405,8 +412,8 @@ export default function SkillTreePage() {
                     onClick={() => openTopic(topic)}
                     style={{
                       display: 'grid', gridTemplateColumns: '24px 1fr auto', alignItems: 'center', gap: 8, padding: '8px 9px', borderRadius: 8,
-                      border: `1px solid ${active ? topic.color : 'rgba(255,255,255,.08)'}`,
-                      background: active ? `${topic.color}22` : 'rgba(255,255,255,.03)',
+                      border: `1px solid ${active ? topic.color : prog?.quizPassed ? 'rgba(120,245,223,.25)' : 'rgba(255,255,255,.08)'}`,
+                      background: active ? `${topic.color}22` : prog?.quizPassed ? 'rgba(120,245,223,.05)' : 'rgba(255,255,255,.03)',
                       color: active ? '#fff' : 'rgba(255,255,255,.66)', cursor: 'pointer',
                       textAlign: 'left', fontFamily: 'JetBrains Mono,monospace', fontSize: '.53rem',
                       transition: 'all .18s',
@@ -416,7 +423,7 @@ export default function SkillTreePage() {
                     <span style={{ width: 24, height: 24, borderRadius: 6, display: 'grid', placeItems: 'center', background: `${topic.color}1a`, color: topic.color, flexShrink: 0, fontWeight: 900, fontSize: '.58rem' }}>{index + 1}</span>
                     <span style={{ lineHeight: 1.22 }}>
                       <span style={{ display: 'block' }}>{topic.title}</span>
-                      <span style={{ display: 'block', color: 'rgba(255,255,255,.34)', marginTop: 2 }}>LOCKED - click to unlock</span>
+                      <span style={{ display: 'block', color: subtitleColor, marginTop: 2 }}>{subtitle}</span>
                     </span>
                     <span style={{ color: '#78f5df', fontSize: '.5rem', whiteSpace: 'nowrap' }}>+{totalTopicXp} XP</span>
                   </button>
@@ -717,7 +724,7 @@ export default function SkillTreePage() {
             <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', gap: 14, alignItems: 'flex-start', flexShrink: 0, flexWrap: 'wrap' }}>
               <div style={{ width: 46, height: 46, borderRadius: 12, background: `${activeTopic.color}1a`, border: `1.5px solid ${activeTopic.color}55`, display: 'grid', placeItems: 'center', color: activeTopic.color, fontWeight: 900, fontSize: '.85rem', flexShrink: 0 }}>{activeTopic.icon}</div>
               <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ color: activeTopic.color, fontFamily: 'JetBrains Mono,monospace', fontSize: '.58rem', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 3 }}>UNLOCKED TOPIC</div>
+                <div style={{ color: activeTopic.color, fontFamily: 'JetBrains Mono,monospace', fontSize: '.58rem', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 3 }}>BLOG TOPIC</div>
                 <h2 style={{ color: '#fff', fontSize: '1.25rem', lineHeight: 1.2, margin: 0 }}>{activeTopic.title}</h2>
                 <p style={{ color: 'rgba(255,255,255,.52)', fontSize: '.8rem', lineHeight: 1.5, margin: '5px 0 0' }}>{activeTopic.summary}</p>
               </div>
@@ -871,9 +878,34 @@ export default function SkillTreePage() {
                 <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '.6rem', color: activeTopic.color, marginBottom: 12, letterSpacing: '.1em' }}>KNOWLEDGE QUIZ</div>
 
                 {topicState.progress?.quizPassed ? (
-                  <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(120,245,223,.08)', border: '1px solid rgba(120,245,223,.25)', marginBottom: 14 }}>
-                    <div style={{ color: '#78f5df', fontWeight: 900, fontSize: '.95rem' }}>Quiz Passed</div>
-                    <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem', marginTop: 4 }}>Score: {topicState.progress.quizScore}% - +{activeTopic.quizXp} XP earned</div>
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(120,245,223,.08)', border: '1px solid rgba(120,245,223,.25)' }}>
+                      <div style={{ color: '#78f5df', fontWeight: 900, fontSize: '.95rem' }}>Quiz Passed</div>
+                      <div style={{ color: 'rgba(255,255,255,.6)', fontSize: '.78rem', marginTop: 4 }}>Score: {topicState.progress.quizScore}% - +{activeTopic.quizXp} XP earned</div>
+                    </div>
+                    {(() => {
+                      const idx = SKILL_TOPICS.findIndex(t => t.id === activeTopic.id);
+                      const next = SKILL_TOPICS[idx + 1];
+                      return next ? (
+                        <button
+                          type="button"
+                          onClick={() => openTopic(next)}
+                          style={{
+                            width: '100%', marginTop: 10, padding: '12px 16px', borderRadius: 12,
+                            border: '1.5px solid rgba(120,245,223,.5)',
+                            background: 'linear-gradient(135deg,rgba(120,245,223,.2),rgba(120,245,223,.08))',
+                            color: '#78f5df', fontWeight: 800, fontSize: '.88rem',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                          }}
+                        >
+                          Next Topic: {next.title} →
+                        </button>
+                      ) : (
+                        <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 10, background: 'rgba(231,196,119,.08)', border: '1px solid rgba(231,196,119,.28)', color: '#e7c477', fontSize: '.82rem', textAlign: 'center', fontWeight: 700 }}>
+                          All topics completed!
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : quizSubmitted ? (
                   <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(231,196,119,.08)', border: '1px solid rgba(231,196,119,.25)', marginBottom: 14 }}>
