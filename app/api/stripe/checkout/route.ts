@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { getAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { handleError } from '@/lib/errors';
 
@@ -17,21 +17,16 @@ const PRICE_IDS: Record<string, string | undefined> = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) return NextResponse.json({ message: 'Нэвтрээгүй байна' }, { status: 401 });
-
-    const clerkUser = await currentUser();
-    const email = clerkUser?.emailAddresses[0]?.emailAddress;
-    if (!email) return NextResponse.json({ message: 'Имэйл олдсонгүй' }, { status: 400 });
-
+    const u = getAuthUser(req);
     const { plan } = await req.json();
+
     if (!['PREMIUM', 'MAX'].includes(plan)) {
       return NextResponse.json({ message: 'Буруу төлөвлөгөө' }, { status: 400 });
     }
 
     const origin = req.headers.get('origin') || process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
-    const dbUser = await prisma.user.findUnique({ where: { email } });
+    const dbUser = await prisma.user.findUnique({ where: { id: u.userId }, select: { email: true } });
     if (!dbUser) return NextResponse.json({ message: 'Хэрэглэгч олдсонгүй' }, { status: 404 });
 
     if (!stripe) return NextResponse.json({ message: 'Stripe тохируулаагүй байна' }, { status: 500 });
@@ -40,12 +35,12 @@ export async function POST(req: NextRequest) {
     if (!priceId) return NextResponse.json({ message: 'Price ID тохируулаагүй байна' }, { status: 500 });
 
     const session = await stripe.checkout.sessions.create({
-      customer_email: email,
+      customer_email: dbUser.email,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/api/stripe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/profile?tab=subscription&cancelled=1`,
-      metadata: { userEmail: email, plan },
+      metadata: { userId: u.userId, userEmail: dbUser.email, plan },
     });
 
     return NextResponse.json({ success: true, url: session.url });
