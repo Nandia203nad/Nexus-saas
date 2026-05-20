@@ -104,6 +104,15 @@ const isProtected = createRouteMatcher([
   '/videos(.*)',
 ]);
 
+const isPublic = createRouteMatcher([
+  '/auth/login/sso-callback(.*)',
+  '/auth/register/sso-callback(.*)',
+  '/auth/login(.*)',
+  '/auth/register(.*)',
+  '/',
+  '/blogs(.*)',
+]);
+
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { pathname } = req.nextUrl;
   const ip =
