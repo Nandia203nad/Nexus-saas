@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     if (!v.success) return NextResponse.json({ message: 'Оролтын өгөгдөл буруу' }, { status: 400 });
     const result = await authService.login(v.data);
     const res = NextResponse.json({ success: true, user: result.user, token: result.token });
-    res.cookies.set('nexus_token', result.token, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 604800 });
+    res.cookies.set('nexus_token', result.token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 604800, path: '/' });
     return res;
   } catch (error) {
     console.error('[Login Error]:', error);

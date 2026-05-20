@@ -27,7 +27,20 @@ export default function RegisterPage() {
   };
 
   useEffect(() => {
-    if (localStorage.getItem('nexus_token')) router.replace('/home');
+    const token = localStorage.getItem('nexus_token');
+    if (!token) return;
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        if (res.ok) router.replace('/home');
+        else {
+          localStorage.removeItem('nexus_token');
+          localStorage.removeItem('nexus_user');
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('nexus_token');
+        localStorage.removeItem('nexus_user');
+      });
   }, [router]);
 
   useEffect(() => {
